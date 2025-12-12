@@ -1,4 +1,4 @@
-""" FIXME """
+""" Launcher """
 
 import argparse
 import logging
@@ -24,9 +24,14 @@ class Launcher:
         self.options = None
         self.command = None
 
-    def common_arguments(self, parser, sdk=False, codechecker=False):
+    def common_arguments(self, parser, add_help=False):
         """ Add common arguments """
         group = parser.add_argument_group("global options")
+        if add_help:
+            group.add_argument(
+                "-h", "--help",
+                action="help",
+                help="show this help message and exit")
         group.add_argument(
             "-v", "--verbosity",
             default=0,
@@ -45,6 +50,7 @@ class Launcher:
         """ Parse command line arguments or show help """
         parser = argparse.ArgumentParser(
             formatter_class=argparse.RawTextHelpFormatter,
+            add_help=False,
             prog=PROGNAME,
             description=__doc__,
             epilog=EXAMPLES)
@@ -65,6 +71,8 @@ class Launcher:
             help="Run Jira statistics")
         component.add_arguments(parser_jira)
         self.common_arguments(parser_jira)
+
+        self.common_arguments(parser, add_help=True)
 
         self.options = parser.parse_args()
         self.command = self.options.command

@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 
-
 # Locate the code, set PYTHONPATH and execute
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 SRC_PATH=$(realpath "$THIS_DIR/../src")
 export PYTHONPATH=$SRC_PATH:$PYTHONPATH
 python3 -B $SRC_PATH "$@"
-
-#python3 -B $SRC_PATH/gerrit.py "$@"
