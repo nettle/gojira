@@ -1,12 +1,10 @@
 all: help
 
-VENV := . .venv/bin/activate
-
 sync:
 	@uv sync -q
 
 init: sync
-	@$(VENV) && echo "Run:  . .venv/bin/activate"
+	@echo "Run:  . .venv/bin/activate"
 
 clean:
 	rm -rf uv.lock
@@ -22,29 +20,29 @@ clean:
 .PHONY: test
 test: sync
 	@echo "Running unittests"
-	@$(VENV) && python -B -m unittest discover -v
+	@uv run python -B -m unittest discover -v
 
 pytest: sync
 	@echo "Running pytest"
-	@$(VENV) && pytest
+	@uv run pytest
 
 pylint: sync
 	@echo "Running pylint"
-	@$(VENV) && pylint --include-naming-hint=y **/*.py
+	@uv run pylint --include-naming-hint=y **/*.py
 
 style: sync
-	@$(VENV) && pycodestyle . --verbose --exclude=.git,.venv,output && echo "Style is OK"
+	@uv run pycodestyle . --verbose --exclude=.git,.venv,output && echo "Style is OK"
 
 coverage: sync
-	@$(VENV) && coverage run --source=./src -m unittest discover -v
-	@$(VENV) && coverage report -m
+	@uv run coverage run --source=./src -m unittest discover -v
+	@uv run coverage report -m
 
 sanity: sync
-	@$(VENV) && bash test/sanity.sh
+	@uv run bash test/sanity.sh
 
 build: sync
 	@mkdir -p build/fake && touch build/fake/hook-jira.py
-	@$(VENV) && pyinstaller --clean --onefile --additional-hooks-dir=build/fake --name=gojira src/__main__.py
+	@uv run pyinstaller --clean --onefile --additional-hooks-dir=build/fake --name=gojira src/__main__.py
 
 help:
 	@echo "Note: UV package manager for python is required"
