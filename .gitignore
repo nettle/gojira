@@ -1,2 +1,7 @@
 /*.cfg
 
+/.venv/
+/uv.lock
+*.spec
+/build/
+/dist/
