@@ -107,10 +107,16 @@ class Jira:
         req = urllib.request.Request(url)
         if self.token:
             req.add_header("Authorization", f"Bearer {self.token}")
-            time.sleep(0.5)
         logging.debug("Request data: %s", str(req))
         try:
             with self.opener.open(req) as response:
+                remaining = response.headers.get("X-RateLimit-Remaining")
+                if remaining is not None and int(remaining) <= 1:
+                    fill_rate = float(response.headers.get("X-RateLimit-FillRate", 2))
+                    interval = float(response.headers.get("X-RateLimit-Interval-Seconds", 1))
+                    delay = interval / fill_rate
+                    logging.debug("Rate limit low (%s remaining), waiting %.1fs", remaining, delay)
+                    time.sleep(delay)
                 return response.read().decode("utf-8")
         except urllib.error.HTTPError as error:
             logging.error("HTTP Error during subsequent request: %s - %s",
