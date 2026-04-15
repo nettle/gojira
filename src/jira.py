@@ -5,6 +5,8 @@ Jira REST API
 import json
 import http.cookiejar
 import logging
+import netrc
+import time
 import urllib
 
 
@@ -26,22 +28,48 @@ def get_dict(data, name):
     return {}
 
 
+def token_from_netrc(url):
+    """ Read token from ~/.netrc for the given host """
+    host = urllib.parse.urlparse(url).hostname
+    try:
+        info = netrc.netrc()
+        auth = info.hosts.get(host)
+        if auth:
+            _, _, token = auth
+            if token:
+                logging.info("Using token from .netrc for %s", host)
+                return token
+    except (FileNotFoundError, netrc.NetrcParseError):
+        pass
+    return None
+
+
 class Jira:
     """
     Class for Jira REST API
     """
-    def __init__(self, base_url, username, password):
+    def __init__(self, base_url,
+                 username=None, password=None,
+                 token=None, netrc=False):
         self.cookies = http.cookiejar.CookieJar()
         self.opener = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(self.cookies))
         self.base_url = base_url
-        self.login_data = json.dumps(
-            {"username": username, "password": password}).encode("utf-8")
+        self.token = token
+        self.login_data = None
+        if not self.token and netrc:
+            self.token = token_from_netrc(base_url)
+        if username and password:
+            self.login_data = json.dumps(
+                {"username": username, "password": password}).encode("utf-8")
 
     def open(self):
         """
         Connect to Jira instance and create session
         """
+        if self.token:
+            logging.info("Using PAT authentication")
+            return True
         session_url = f"{self.base_url}/rest/auth/1/session"
         logging.debug("Session URL:   %s", session_url)
         headers = {"Content-Type": "application/json"}
@@ -77,6 +105,9 @@ class Jira:
         url = f"{self.base_url}/{rest}"
         logging.debug("Request  URL: %s", url)
         req = urllib.request.Request(url)
+        if self.token:
+            req.add_header("Authorization", f"Bearer {self.token}")
+            time.sleep(0.5)
         logging.debug("Request data: %s", str(req))
         try:
             with self.opener.open(req) as response:
@@ -112,6 +143,9 @@ class Jira:
         Return total from Jira JQL request
         """
         data = self.jql(query, start_at=0, max_results=0, fields="")
+        if not data:
+            logging.error("No response for query: %s", query)
+            return 0
         data = json.loads(data)
         logging.debug("Data: %s", str(data))
         if data and "total" in data:

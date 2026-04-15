@@ -47,7 +47,9 @@ def connect(options):
     Connect to Jira
     """
     section("Connecting to " + options.url)
-    jira = Jira(options.url, options.username, options.password)
+    jira = Jira(options.url,
+                options.username, options.password,
+                options.token, options.netrc)
     if not jira.open():
         section("Fail")
         return None
@@ -290,6 +292,12 @@ def add_arguments(parser):
                         help="username")
     parser.add_argument("-p", "--password",
                         help="password")
+    parser.add_argument("-pat", "--token",
+                        help="personal access token (PAT)")
+    parser.add_argument("-n", "--netrc",
+                        default=False,
+                        action="store_true",
+                        help="use token from ~/.netrc")
     parser.add_argument("--jql",
                         help="JQL to run")
     parser.add_argument("-t", "--test",
@@ -303,11 +311,12 @@ def run(options):
     """
     Run function
     """
-    if not options.username:
-        options.username = getpass.getuser()
-    if not options.password:
-        print("Using Jira username:", options.username)
-        options.password = getpass.getpass("Enter your Jira password: ")
+    if not options.netrc and not options.token:
+        if not options.username:
+            options.username = getpass.getuser()
+        if not options.password:
+            print("Using Jira username:", options.username)
+            options.password = getpass.getpass("Enter your Jira password: ")
     jira = connect(options)
     if not jira:
         return False
